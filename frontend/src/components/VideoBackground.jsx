@@ -1,15 +1,53 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 const VideoBackground = ({ videoSrc }) => {
+  const videoRef = useRef(null);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const [showSoundPrompt, setShowSoundPrompt] = useState(false);
+
+  // Try to enable sound after component mounts
+  useEffect(() => {
+    const tryEnableSound = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        // Check if playback is happening
+        videoRef.current.play().then(() => {
+          setShowSoundPrompt(false);
+        }).catch(error => {
+          setShowSoundPrompt(true);
+        });
+      }
+    };
+
+    // Attempt to enable sound after a short delay
+    const soundTimer = setTimeout(tryEnableSound, 1000);
+
+    return () => clearTimeout(soundTimer);
+  }, []);
+
+  const handleUserInteraction = () => {
+    if (!userInteracted && videoRef.current) {
+      setUserInteracted(true);
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(console.error);
+      setShowSoundPrompt(false);
+    }
+  };
+
   return (
-    <div style={styles.container}>
+    <div 
+      style={styles.container}
+      onClick={handleUserInteraction}
+    >
       <video
+        ref={videoRef}
         style={styles.video}
         src={videoSrc}
         autoPlay
-        muted={false}
+        muted={true} // Start muted to allow autoplay
         loop
         playsInline
+        controls={false}
       />
       
       {/* Stylish Heading */}
@@ -33,8 +71,21 @@ const VideoBackground = ({ videoSrc }) => {
       {/* Teal Banner */}
       <div style={styles.banner}>
         <div style={styles.bannerContent}>
-THE COUNTDOWN BEGINS • COMING SOON • STAY TUNED FOR THE UNVEILING • SOMETHING NEW IS BREWING • COMING SOON • KEEP WATCHING • STAY TUNED        </div>
+          THE COUNTDOWN BEGINS • COMING SOON • STAY TUNED FOR THE UNVEILING • SOMETHING NEW IS BREWING • COMING SOON • KEEP WATCHING • STAY TUNED
+        </div>
       </div>
+
+      {/* Sound prompt (only shows if needed) */}
+      {showSoundPrompt && (
+        <div style={styles.soundPrompt} onClick={handleUserInteraction}>
+          <div style={styles.soundPromptContent}>
+            <svg style={styles.soundIcon} viewBox="0 0 24 24">
+              <path fill="currentColor" d="M3,9H7L12,4V20L7,15H3V9M16.5,12A4.5,4.5 0 0,0 12,7.5V8A4,4 0 0,1 16,12A4,4 0 0,1 12,16V16.5A4.5,4.5 0 0,0 16.5,12Z" />
+            </svg>
+            <span>Click anywhere to enable sound</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -45,6 +96,7 @@ const styles = {
     width: '100vw',
     height: '100vh',
     overflow: 'hidden',
+    cursor: 'pointer'
   },
   video: {
     position: 'absolute',
@@ -62,6 +114,7 @@ const styles = {
     right: 0,
     zIndex: 1,
     textAlign: 'center',
+    pointerEvents: 'none' // Allows clicks to pass through to video
   },
   heading: {
     fontSize: 'clamp(3rem, 10vw, 6rem)',
@@ -70,7 +123,7 @@ const styles = {
     letterSpacing: '-0.03em',
     display: 'inline-block',
   },
-  // Individual letter styling for a dynamic look
+  // Individual letter styling
   letterW: { color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.7)' },
   letterE: { color: '#33EED5', textShadow: '0 0 15px rgba(51,238,213,0.8)' },
   apostrophe: { color: '#fff', fontSize: '0.8em' },
@@ -83,7 +136,7 @@ const styles = {
   letterI: { color: '#fff' },
   letterN: { color: '#33EED5', textShadow: '0 0 15px rgba(51,238,213,0.8)' },
   letterG: { color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.7)' },
-  // Teal banner styles
+  // Banner styles
   banner: {
     position: 'absolute',
     bottom: 0,
@@ -93,6 +146,7 @@ const styles = {
     padding: '10px 0',
     zIndex: 2,
     overflow: 'hidden',
+    pointerEvents: 'none'
   },
   bannerContent: {
     color: '#000',
@@ -103,10 +157,34 @@ const styles = {
     display: 'inline-block',
     paddingLeft: '100%',
   },
-  // Animation for scrolling text
-  '@keyframes scrollText': {
-    from: { transform: 'translateX(0)' },
-    to: { transform: 'translateX(-100%)' },
+  // Sound prompt styles
+  soundPrompt: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 3,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(2px)',
+  },
+  soundPromptContent: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: 'white',
+    padding: '20px 30px',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+  },
+  soundIcon: {
+    width: '24px',
+    height: '24px',
   },
 };
 
